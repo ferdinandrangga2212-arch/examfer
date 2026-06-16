@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Examferr-dripclient</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // GANTI DENGAN KONFIGURASI FIREBASE KAMU DARI FIREBASE CONSOLE
+const firebaseConfig = {
+  apiKey: "AIzaSyAijiZS8tSYhdLE4kemEUSTiUaQg5BWR7k",
+  authDomain: "examferrr.firebaseapp.com",
+  databaseURL: "https://examferrr-default-rtdb.firebaseio.com",
+  projectId: "examferrr",
+  storageBucket: "examferrr.firebasestorage.app",
+  messagingSenderId: "537790668638",
+  appId: "1:537790668638:web:59d93fdbef4f449451b9cf"
+};
+
+        const app = initializeApp(firebaseConfig);
+        window.db = getFirestore(app);
+        window.docRef = doc;
+        window.setDocRef = setDoc;
+    </script>
+
+    <style>
+        :root { --primary-red: #d90429; --secondary-blue: #003049; --light-white: #f8f9fa; --pure-white: #ffffff; --dark-gray: #2b2d42; --success-green: #2a9d8f; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; user-select: none; }
+        body { background-color: var(--light-white); overflow-x: hidden; transition: background 0.3s, color 0.3s; }
+        body.dark-mode-exam { background-color: #121212 !important; color: #ffffff !important; }
+        body.dark-mode-exam .exam-body, body.dark-mode-exam .soal-item { background: #1e1e1e !important; color: #fff !important; border-color: #333; }
+        body.dark-mode-exam .isian-box { background: #2d2d2d !important; color: #fff !important; border-color: #555; }
+        
+        #loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, var(--secondary-blue) 0%, #001524 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; color: var(--pure-white); }
+        .spinner { width: 50px; height: 50px; border: 5px solid rgba(255, 255, 255, 0.1); border-radius: 50%; border-top-color: var(--primary-red); animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        #login-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; background: var(--secondary-blue); color: white; padding: 20px; }
+        .login-card { background: var(--pure-white); color: var(--dark-gray); padding: 35px; border-radius: 12px; max-width: 400px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border-bottom: 6px solid var(--primary-red); }
+        .login-input { width: 100%; padding: 12px; margin: 10px 0 20px 0; border: 2px solid #ccc; border-radius: 6px; font-size: 15px; }
+        
+        #main-app { display: none; }
+        .banner-container { width: 100%; height: 260px; border-bottom: 6px solid var(--primary-red); overflow: hidden; display: flex; justify-content: center; align-items: center; background-color: var(--secondary-blue); }
+        .banner-img { width: 100%; height: 100%; object-fit: fill; }
+        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+        .section-title { color: var(--secondary-blue); border-left: 6px solid var(--primary-red); padding-left: 12px; margin-bottom: 30px; font-size: 24px; font-weight: 700; }
+        .exam-card { background: var(--pure-white); border-radius: 12px; border-top: 5px solid var(--secondary-blue); padding: 25px; box-shadow: 0 6px 15px rgba(0,0,0,0.06); max-width: 420px; }
+        
+        .btn-start { background-color: var(--primary-red); color: var(--pure-white); border: none; padding: 14px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 15px; }
+        #exam-room { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: inherit; z-index: 500; overflow-y: auto; }
+        .exam-header { background-color: var(--secondary-blue); color: var(--pure-white); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--primary-red); }
+        .exam-body { max-width: 800px; margin: 30px auto; background: var(--pure-white); padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+        .soal-item { margin-bottom: 35px; padding-bottom: 25px; border-bottom: 1px dashed #e9ecef; text-align: left; }
+        .isian-box { width: 100%; padding: 12px; margin-top: 10px; border: 2px solid #ced4da; border-radius: 6px; font-size: 15px; }
+        
+        #lock-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(217, 4, 41, 0.98); z-index: 10000; justify-content: center; align-items: center; color: var(--pure-white); text-align: center; }
+        .lock-box { background: var(--pure-white); color: var(--dark-gray); padding: 40px; border-radius: 15px; max-width: 500px; width: 90%; }
+        #success-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--light-white); z-index: 600; flex-direction: column; justify-content: center; align-items: center; }
+        
+        #broadcast-toast { display: none; position: fixed; top: 80px; right: 20px; background: #ffb703; color: #023047; padding: 15px 25px; border-radius: 8px; font-weight: bold; z-index: 2000; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        #freeze-layer { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 99999; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <div id="freeze-layer"></div>
+    <div id="loading-screen"><div class="spinner"></div><h2>EXAMBRO SUPREME v4.5</h2></div>
+    <div id="broadcast-toast"><i class="fa-solid fa-bullhorn"></i> PENGUMUMAN GURU: <span id="toast-msg"></span></div>
+
+    <div id="login-screen">
+        <div class="login-card">
+            <h2 style="margin-bottom:20px; color:var(--secondary-blue);"><i class="fa-solid fa-shield-halved"></i> Ujian Nusantara</h2>
+            <label>Nama Lengkap:</label><input type="text" id="nama-siswa" class="login-input" placeholder="Nama Lengkap">
+            <label>NISN:</label><input type="text" id="nisn-siswa" class="login-input" placeholder="Nomor NISN">
+            <button class="btn-start" onclick="submitLogin()">Masuk Portal</button>
+        </div>
+    </div>
+
+    <div id="main-app">
+        <div class="banner-container"><img src="images.jpg" class="banner-img"></div>
+        <div class="container">
+            <h2 class="section-title">Ujian Mandiri Tersedia</h2>
+            <div class="exam-card">
+                <h3>Evaluasi Isian Singkat</h3>
+                <p style="margin:10px 0; color:grey; font-size:14px;">Waktu Fleksibel • Jawaban Dikirim Langsung Ke Admin</p>
+                <button class="btn-start" onclick="document.getElementById('token-modal').style.display='flex'">MASUK RUANG UJIAN</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="token-modal" style="display:none;" class="modal">
+        <div class="modal-content" style="background:white; padding:30px; border-radius:10px; text-align:center; margin:auto; margin-top:15%;">
+            <h3>Masukkan Token Keamanan</h3>
+            <input type="text" id="input-token" placeholder="XXXX" maxlength="4" style="text-align:center; font-size:24px; width:60%; padding:10px; margin:15px 0; border:2px solid #ccc; border-radius:6px;">
+            <button class="btn-start" onclick="validateTokenAndStart()">Validasi & Kerjakan</button>
+        </div>
+    </div>
+
+    <video id="camera-feed" autoplay playsinline muted style="display:none;"></video>
+
+    <div id="exam-room">
+        <div class="exam-header">
+            <div><strong style="color:var(--primary-red)">EXAMFER</strong>create by ferdinand</div>
+            <div>Sisa Waktu: <span id="timer-box">30:00</span></div>
+            <div style="font-weight:bold;"><i class="fa-solid fa-user"></i> <span id="display-nama">Siswa</span> (<span id="display-nisn">0000</span>)</div>
+        </div>
+        <div class="exam-body">
+            <div id="tempat-soal-siswa"><p style="color:grey; text-align:center;">Menunggu Distribusi Soal Dari Pengawas Admin...</p></div>
+            <button class="btn-start" id="btn-submit-ujian" style="background-color:var(--success-green); margin-top:25px; display:none;" onclick="submitExam()">Selesai & Kumpul Ujian</button>
+        </div>
+    </div>
+
+    <div id="success-screen">
+        <div style="background:white; padding:40px; border-radius:15px; text-align:center; max-width:450px; box-shadow:0 5px 15px rgba(0,0,0,0.1); margin-top:15%">
+            <i class="fa-solid fa-circle-check" style="font-size:60px; color:var(--success-green);"></i>
+            <h2 style="margin-top:15px;">Selesai!</h2>
+            <p style="color:grey; margin-top:10px;">Jawaban Anda telah berhasil di-upload dan direkam di Web Admin Pengawas.</p>
+        </div>
+    </div>
+
+    <div id="lock-screen">
+        <div class="lock-box">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size:55px; color:var(--primary-red)"></i>
+            <h2 style="color:var(--primary-red); margin-top:10px;">AKSES DIKUNCI SISTEM</h2>
+            <p style="margin: 15px 0; font-weight:bold; color:#333;">Pelanggaran Terdeteksi! Panggil Pengawas untuk memasukkan PIN Pengunci: <span style="color:var(--primary-red); font-size:20px;">1234</span></p>
+            <button class="btn-start" onclick="unlockByAdmin()" style="background: var(--secondary-blue)">Buka dengan PIN</button>
+        </div>
+    </div>
+
+    <script>
+        const channel = new BroadcastChannel('exambro_supreme_channel');
+        let isExamRunning = false, audioCtx = null, alarmInterval = null, timerInterval = null;
+        let currentQuestions = [], dataSiswa = { nama: "", nisn: "" }, jawabanSiswa = {};
+        let sisaDetik = 1800;
+
+        window.addEventListener('DOMContentLoaded', () => { setTimeout(() => { document.getElementById('loading-screen').style.display='none'; }, 600); });
+
+        function submitLogin() {
+            const nama = document.getElementById('nama-siswa').value.trim();
+            const nisn = document.getElementById('nisn-siswa').value.trim();
+            if(!nama || !nisn) return alert("Isi Data!");
+            dataSiswa = { nama, nisn };
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            document.getElementById('display-nama').innerText = nama;
+            document.getElementById('display-nisn').innerText = nisn;
+            channel.postMessage({ type: "DAFTAR_SISWA", nama, nisn });
+            channel.postMessage({ type: "MINTA_SOAL_DONG" });
+        }
+
+        // Token Loop disinkronisasi 4 Huruf
+        function generateTimeToken() {
+            const block = Math.floor(Date.now() / 1000 / 60 / 5);
+            return ("GAC" + String((block * 987) % 90 + 10)).substring(0, 4);
+        }
+
+        function validateTokenAndStart() {
+            if(document.getElementById('input-token').value.toUpperCase() === generateTimeToken()){
+                document.getElementById('token-modal').style.display = 'none';
+                startCameraFeed('user');
+            } else { alert("Token Keliru!"); }
+        }
+
+        function startCameraFeed(mode) {
+            const v = document.getElementById('camera-feed');
+            if(v.srcObject) { v.srcObject.getTracks().forEach(t=>t.stop()); }
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: mode } })
+            .then(s => { v.srcObject = s; startStream(); startExam(); }).catch(() => { startExam(); });
+        }
+
+        function startExam() {
+            document.getElementById('main-app').style.display = 'none';
+            document.getElementById('exam-room').style.display = 'block';
+            isExamRunning = true;
+            runTimer();
+        }
+
+        function runTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if(sisaDetik <= 0) { clearInterval(timerInterval); kirimKeAdminOtomatis(); }
+                sisaDetik--;
+                let m = Math.floor(sisaDetik / 60); let s = sisaDetik % 60;
+                document.getElementById('timer-box').innerText = `${m}:${s < 10 ? '0':''}${s}`;
+            }, 1000);
+        }
+
+        function renderSoal() {
+            const area = document.getElementById('tempat-soal-siswa'); area.innerHTML = "";
+            currentQuestions.forEach((s, i) => {
+                let jwb = jawabanSiswa[`soal_${i}`] || "";
+                area.innerHTML += `<div class="soal-item"><p><strong>Soal ${i+1}.</strong> ${s.text}</p><input type="text" class="isian-box" value="${jwb}" oninput="updateJawabanLive(${i}, this.value)" placeholder="Ketik jawaban singkat disini..."></div>`;
+            });
+            document.getElementById('btn-submit-ujian').style.display = 'block';
+        }
+
+        function updateJawabanLive(indexSoal, teksJawaban) {
+            jawabanSiswa[`soal_${indexSoal}`] = teksJawaban;
+            channel.postMessage({
+                type: "UPDATE_JAWABAN_LIVE",
+                nisn: dataSiswa.nisn,
+                jawaban: jawabanSiswa
+            });
+        }
+
+        async function kirimKeAdminOtomatis() {
+            isExamRunning = false; stopAlarm(); clearInterval(timerInterval);
+            
+            // Backup ke Cloud Firestore Firebase agar tersimpan online
+            if(window.db) {
+                try {
+                    await window.setDocRef(window.docRef(window.db, "jawaban_siswa", dataSiswa.nisn), {
+                        nama: dataSiswa.nama,
+                        nisn: dataSiswa.nisn,
+                        jawaban: jawabanSiswa,
+                        waktu_selesai: new Date().toLocaleString()
+                    });
+                } catch(err) { console.error("Gagal simpan Firebase cloud: ", err); }
+            }
+
+            // Laporkan ke Web Admin via channel lokal untuk memicu auto-download berkas
+            channel.postMessage({ type: "SISWA_SELESAI_SUBMIT", nisn: dataSiswa.nisn, jawabanFinal: jawabanSiswa });
+            
+            document.getElementById('exam-room').style.display = 'none';
+            document.getElementById('lock-screen').style.display = 'none';
+            document.getElementById('success-screen').style.display = 'flex';
+        }
+
+        window.addEventListener('blur', () => { if(isExamRunning) triggerCheat(); });
+        document.addEventListener('visibilitychange', () => { if(document.hidden && isExamRunning) triggerCheat(); });
+
+        function triggerCheat() {
+            document.getElementById('lock-screen').style.display = 'flex';
+            channel.postMessage({ type: "SISWA_MELANGGAR", nisn: dataSiswa.nisn });
+            startAlarm();
+        }
+
+        function startAlarm() {
+            if(alarmInterval) return;
+            audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+            alarmInterval = setInterval(() => {
+                let o = audioCtx.createOscillator(); let g = audioCtx.createGain();
+                o.type = 'sawtooth'; o.frequency.setValueAtTime(1200, audioCtx.currentTime);
+                g.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.15);
+            }, 300);
+        }
+
+        function stopAlarm() { clearInterval(alarmInterval); alarmInterval = null; }
+
+        function unlockByAdmin() {
+            if(prompt("Masukkan PIN Pengawas:") === "1234") {
+                stopAlarm(); document.getElementById('lock-screen').style.display = 'none';
+                channel.postMessage({ type: "SISWA_DIBEBASKAN", nisn: dataSiswa.nisn });
+                renderSoal();
+            } else { alert("PIN Salah!"); }
+        }
+
+        function startStream() {
+            const v = document.getElementById('camera-feed'); const c = document.createElement('canvas'); const ctx = c.getContext('2d');
+            setInterval(() => {
+                if(isExamRunning && v.srcObject && v.readyState === v.HAVE_ENOUGH_DATA) {
+                    c.width = 140; c.height = 105; ctx.drawImage(v, 0, 0, c.width, c.height);
+                    channel.postMessage({ type: "STREAM", frame: c.toDataURL('image/jpeg', 0.2), nisn: dataSiswa.nisn });
+                }
+            }, 400);
+        }
+
+        channel.onmessage = (e) => {
+            if(e.data.type === "KIRIM_SOAL") { currentQuestions = e.data.payload; renderSoal(); }
+            if(e.data.type === "GANTI_LENSA" && e.data.target === dataSiswa.nisn) startCameraFeed(e.data.mode);
+            if(e.data.type === "FORCED_SUBMIT") kirimKeAdminOtomatis();
+            if(e.data.type === "BROADCAST_GURU") {
+                document.getElementById('toast-msg').innerText = e.data.msg;
+                document.getElementById('broadcast-toast').style.display = 'block';
+                setTimeout(() => { document.getElementById('broadcast-toast').style.display='none'; }, 6000);
+            }
+            if(e.data.type === "DARK_MODE") { document.body.classList.toggle('dark-mode-exam', e.data.value); }
+            if(e.data.type === "FREEZE") { document.getElementById('freeze-layer').style.display = e.data.value ? 'block' : 'none'; }
+            if(e.data.type === "TAMBAH_WAKTU") { sisaDetik += 300; alert("Guru memberikan tambahan waktu 5 menit!"); }
+            if(e.data.type === "KICK" && e.data.target === dataSiswa.nisn) { alert("Anda telah dikeluarkan oleh guru!"); location.reload(); }
+            if(e.data.type === "RESET_EXAM" && e.data.target === dataSiswa.nisn) { jawabanSiswa = {}; renderSoal(); alert("Jawaban direset oleh Guru!"); }
+        };
+
+        function submitExam() { if(confirm("Kumpul lembar jawaban kamu ke admin pengawas sekarang?")) kirimKeAdminOtomatis(); }
+    </script>
+</body>
+</html>
